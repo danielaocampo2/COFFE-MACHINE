@@ -5,10 +5,15 @@
 require __DIR__.'/vendor/autoload.php';
 
 use Pdpaola\CoffeeMachine\Console\MakeDrinkCommand;
+
+use Pdpaola\CoffeeMachine\Console\SearchSalesCommand;
+
 use Symfony\Component\Console\Application;
 
 $application = new Application();
 
 $application->add(new MakeDrinkCommand());
+
+$application->add(new SearchSalesCommand());
 
 $application->run();
