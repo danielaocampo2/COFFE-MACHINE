@@ -55,7 +55,8 @@ class MakeDrinkCommand extends Command
             $extraHot = $input->getOption('extra-hot');
 
             $order = DrinkFactory::createDrink($drinkType, $money, $sugars, $extraHot);
-
+            $this->save($order, $stick);
+            
             $output->write('You have ordered a ' . $drinkType);
             if ($extraHot) {
                 $output->write(' extra hot');
@@ -64,19 +65,25 @@ class MakeDrinkCommand extends Command
                 $output->write(' with ' . $sugars . ' sugars (stick included)');
             }
             $output->writeln('');
-            $pdo = MysqlPdoClient::getPdo();
+            
 
-            $stmt= $pdo->prepare( 'INSERT INTO orders (drink_type, sugars, stick, extra_hot) VALUES (:drink_type, :sugars, :stick, :extra_hot)');
-            $stmt->execute([
-                'drink_type' => $drinkType,
-                'sugars' => $sugars,
-                'stick' => $stick ?: 0,
-                'extra_hot' => $extraHot ?: 0,
-            ]);
 
         } catch (\Exception $e) {
             $output->writeln( $e->getMessage());
         }
+    }
+
+    private function save(Drink $drink, bool $stick)
+    {
+        $pdo = MysqlPdoClient::getPdo();
+
+        $stmt = $pdo->prepare('INSERT INTO orders (drink_type, sugars, stick, extra_hot) VALUES (:drink_type, :sugars, :stick, :extra_hot)');
+        $stmt->execute([
+            'drink_type' => $drink->getType(),
+            'sugars' => $drink->getSugar(),
+            'stick' => $stick ?: 0,
+            'extra_hot' => $drink->getExtraHot() ?: 0,
+        ]);
     }
 
     
