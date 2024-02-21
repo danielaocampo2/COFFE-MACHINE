@@ -34,4 +34,10 @@ class DrinkFactory
             throw new Exception('The drink type should be tea, coffee or chocolate.');
         }
     }
+
+    public static function getPrice(string $drinkType): float
+    {
+        self::validateDrinkType($drinkType);
+        return self::$price[$drinkType];
+    }
 }

@@ -56,7 +56,7 @@ class MakeDrinkCommand extends Command
 
             $order = DrinkFactory::createDrink($drinkType, $money, $sugars, $extraHot);
             $this->save($order, $stick);
-            
+
             $output->write('You have ordered a ' . $drinkType);
             if ($extraHot) {
                 $output->write(' extra hot');
@@ -65,11 +65,8 @@ class MakeDrinkCommand extends Command
                 $output->write(' with ' . $sugars . ' sugars (stick included)');
             }
             $output->writeln('');
-            
-
-
         } catch (\Exception $e) {
-            $output->writeln( $e->getMessage());
+            $output->writeln($e->getMessage());
         }
     }
 
@@ -85,6 +82,4 @@ class MakeDrinkCommand extends Command
             'extra_hot' => $drink->getExtraHot() ?: 0,
         ]);
     }
-
-    
 }
