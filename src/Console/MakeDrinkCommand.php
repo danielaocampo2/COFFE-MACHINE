@@ -8,6 +8,10 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+
+use Pdpaola\CoffeeMachine\Entity\Drink;
+use Pdpaola\CoffeeMachine\Factory\DrinkFactory;
+
 class MakeDrinkCommand extends Command
 {
     protected static $defaultName = 'app:order-drink';
@@ -43,64 +47,44 @@ class MakeDrinkCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $drinkType = strtolower($input->getArgument('drink-type'));
-        if (!in_array($drinkType, ['tea', 'coffee', 'chocolate'])) {
-            $output->writeln('The drink type should be tea, coffee or chocolate.');
-        } else {
-            /**
-             * Tea       --> 0.4
-             * Coffee    --> 0.5
-             * Chocolate --> 0.6
-             */
+        try {
+            $drinkType = strtolower($input->getArgument('drink-type'));
             $money = $input->getArgument('money');
-            switch ($drinkType) {
-                case 'tea':
-                    if ($money < 0.4) {
-                        $output->writeln('The tea costs 0.4.');
-                        return;
-                    }
-                    break;
-                case 'coffee':
-                    if ($money < 0.5) {
-                        $output->writeln('The coffee costs 0.5.');
-                        return;
-                    }
-                    break;
-                case 'chocolate':
-                    if ($money < 0.6) {
-                        $output->writeln('The chocolate costs 0.6.');
-                        return;
-                    }
-                    break;
-            }
-
             $sugars = $input->getArgument('sugars');
-            $stick = false;
+            $stick = $sugars > 0;
             $extraHot = $input->getOption('extra-hot');
-            if ($sugars >= 0 && $sugars <= 2) {
-                $output->write('You have ordered a ' . $drinkType);
-                if ($extraHot) {
-                    $output->write(' extra hot');
-                }
 
-                if ($sugars > 0) {
-                    $stick = true;
-                    $output->write(' with ' . $sugars . ' sugars (stick included)');
-                }
-                $output->writeln('');
-            } else {
-                $output->writeln('The number of sugars should be between 0 and 2.');
+            $order = DrinkFactory::createDrink($drinkType, $money, $sugars, $extraHot);
+            $this->save($order, $stick);
+            
+            $output->write('You have ordered a ' . $drinkType);
+            if ($extraHot) {
+                $output->write(' extra hot');
             }
+            if ($stick) {
+                $output->write(' with ' . $sugars . ' sugars (stick included)');
+            }
+            $output->writeln('');
+            
 
-            $pdo = MysqlPdoClient::getPdo();
 
-            $stmt= $pdo->prepare( 'INSERT INTO orders (drink_type, sugars, stick, extra_hot) VALUES (:drink_type, :sugars, :stick, :extra_hot)');
-            $stmt->execute([
-                'drink_type' => $drinkType,
-                'sugars' => $sugars,
-                'stick' => $stick ?: 0,
-                'extra_hot' => $extraHot ?: 0,
-            ]);
+        } catch (\Exception $e) {
+            $output->writeln( $e->getMessage());
         }
     }
+
+    private function save(Drink $drink, bool $stick)
+    {
+        $pdo = MysqlPdoClient::getPdo();
+
+        $stmt = $pdo->prepare('INSERT INTO orders (drink_type, sugars, stick, extra_hot) VALUES (:drink_type, :sugars, :stick, :extra_hot)');
+        $stmt->execute([
+            'drink_type' => $drink->getType(),
+            'sugars' => $drink->getSugar(),
+            'stick' => $stick ?: 0,
+            'extra_hot' => $drink->getExtraHot() ?: 0,
+        ]);
+    }
+
+    
 }
